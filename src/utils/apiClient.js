@@ -1,9 +1,9 @@
-// src/utils/apiClient.js - Updated API client for Express server
-// Points to Express development server for local development
+// src/utils/apiClient.js - Fixed API client for Railway deployment
+// Points to Railway URL in production, localhost in development
 
 const API_BASE = process.env.NODE_ENV === 'development' 
-  ? 'http://localhost:3001/api'  // Express server for development
-  : '/api';                       // Vercel for production
+  ? 'http://localhost:3001/api'        // Local development
+  : '/api';                            // Production (Railway) - relative URLs
 
 // Generic API call wrapper with error handling
 async function apiCall(endpoint, data = null, method = 'POST') {
@@ -54,7 +54,11 @@ async function apiCall(endpoint, data = null, method = 'POST') {
     let errorType = 'api';
     
     if (error.name === 'TypeError' && error.message.includes('fetch')) {
-      errorMessage = `Cannot connect to API server at ${API_BASE}. Make sure the Express server is running on port 3001.`;
+      if (process.env.NODE_ENV === 'development') {
+        errorMessage = `Cannot connect to API server at ${API_BASE}. Make sure the Express server is running on port 3001.`;
+      } else {
+        errorMessage = `Cannot connect to API server. Please check your internet connection.`;
+      }
       errorType = 'network';
     }
     
@@ -63,7 +67,7 @@ async function apiCall(endpoint, data = null, method = 'POST') {
     }
     
     if (error.message.includes('Unexpected token')) {
-      errorMessage = `Server returned HTML instead of JSON. Check Express server setup.`;
+      errorMessage = `Server returned HTML instead of JSON. Check server setup.`;
     }
     
     return {
@@ -123,7 +127,11 @@ export async function getService(serviceId) {
 // Test API connectivity
 export async function testConnection() {
   try {
-    const response = await fetch(`${API_BASE.replace('/api', '')}/health`);
+    const healthUrl = process.env.NODE_ENV === 'development' 
+      ? 'http://localhost:3001/health' 
+      : '/health';
+      
+    const response = await fetch(healthUrl);
     if (response.ok) {
       const data = await response.json();
       console.log('[API Client] Connection test successful:', data);
@@ -154,7 +162,7 @@ export const ErrorTypes = {
 export const ApiConfig = {
   BASE_URL: API_BASE,
   IS_DEVELOPMENT: process.env.NODE_ENV === 'development',
-  EXPECTED_SERVER_PORT: 3001
+  ENVIRONMENT: process.env.NODE_ENV || 'production'
 };
 
 // Export API client functions as default object
