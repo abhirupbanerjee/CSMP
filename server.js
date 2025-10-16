@@ -1,4 +1,4 @@
-// server.js - Fixed CommonJS Express server for Railway deployment
+// server.js - Fixed to properly serve React build files on Railway
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -35,17 +35,6 @@ app.get('/health', (req, res) => {
     api_routes: ['chat-orchestrator', 'master-agent', 'service-composer', 'validation-agent', 'services', 'test']
   });
 });
-
-// 🚀 RAILWAY FIX #3: Serve React build files in production
-if (process.env.NODE_ENV === 'production') {
-  // Serve static files from React build
-  app.use(express.static(path.join(__dirname, 'build')));
-  
-  // Serve React app for any non-API routes
-  app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'build', 'index.html'));
-  });
-}
 
 // API info endpoint
 app.get('/api', (req, res) => {
@@ -114,10 +103,39 @@ if (loadedRoutes === 0) {
   }
 }
 
-// 🚀 RAILWAY FIX #4: Serve React app for all non-API routes (SPA support)
-if (process.env.NODE_ENV === 'production') {
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'build', 'index.html'));
+// 🚀 CRITICAL FIX: Serve React build files AFTER API routes but BEFORE catch-all
+console.log('🔄 Setting up static file serving...');
+
+// Check if build directory exists
+const buildPath = path.join(__dirname, 'build');
+const fs = require('fs');
+
+if (fs.existsSync(buildPath)) {
+  console.log('✅ Found build directory, serving static files...');
+  
+  // Serve static files from React build
+  app.use(express.static(buildPath, {
+    maxAge: '1d',  // Cache static assets for 1 day
+    index: false   // Don't auto-serve index.html for directories
+  }));
+  
+  // Serve React app for root and non-API routes
+  app.get('/', (req, res) => {
+    console.log('📱 Serving React app for root path');
+    res.sendFile(path.join(buildPath, 'index.html'));
+  });
+  
+} else {
+  console.log('⚠️ Build directory not found, serving basic response...');
+  
+  // Fallback if build directory doesn't exist
+  app.get('/', (req, res) => {
+    res.json({
+      message: 'Caribbean Government Service Portal API',
+      status: 'Build directory not found',
+      note: 'Run npm run build to generate frontend files',
+      api_endpoints: routes.map(r => r.mount)
+    });
   });
 }
 
@@ -130,7 +148,7 @@ app.use((error, req, res, next) => {
   });
 });
 
-// 404 handler for unknown API routes
+// 404 handler for unknown API routes only
 app.use('/api/*', (req, res) => {
   res.status(404).json({ 
     error: 'API route not found',
@@ -138,6 +156,14 @@ app.use('/api/*', (req, res) => {
     available_routes: routes.map(r => r.mount)
   });
 });
+
+// 🚀 CRITICAL: Catch-all handler for React SPA (MUST be last)
+if (fs.existsSync(buildPath)) {
+  app.get('*', (req, res) => {
+    console.log(`📱 Serving React app for: ${req.path}`);
+    res.sendFile(path.join(buildPath, 'index.html'));
+  });
+}
 
 // 🚀 RAILWAY FIX #5: Listen on 0.0.0.0 (not localhost) for Railway
 app.listen(PORT, '0.0.0.0', () => {
@@ -147,6 +173,7 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`🏥 Health Check: http://0.0.0.0:${PORT}/health`);
   console.log(`📋 API Info: http://0.0.0.0:${PORT}/api`);
   console.log(`📋 Services: http://0.0.0.0:${PORT}/api/services`);
+  console.log(`📱 Frontend: Serving from ${buildPath}`);
   console.log('========================================================');
   console.log(`✅ ${loadedRoutes} API endpoints ready`);
   console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
