@@ -1,0 +1,49 @@
+{
+  "version": 2,
+  "functions": {
+    "api/master-agent.js": { 
+      "maxDuration": 8,
+      "memory": 256
+    },
+    "api/service-composer.js": { 
+      "maxDuration": 10,
+      "memory": 256 
+    },
+    "api/validation-agent.js": { 
+      "maxDuration": 5,
+      "memory": 128
+    },
+    "api/chat-orchestrator.js": { 
+      "maxDuration": 12,
+      "memory": 512
+    },
+    "api/services.js": { 
+      "maxDuration": 2,
+      "memory": 128
+    }
+  },
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "Access-Control-Allow-Methods", "value": "GET, POST, OPTIONS" },
+        { "key": "Access-Control-Allow-Headers", "value": "Content-Type, Authorization" }
+      ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/((?!api).*)",
+      "destination": "/index.html"
+    }
+  ],
+  "env": {
+    "OPENAI_API_KEY": "@openai_api_key",
+    "OPENAI_MODEL": "gpt-4o-mini",
+    "OPENAI_MAX_TOKENS": "512",
+    "MAX_INPUT_LENGTH": "1000",
+    "LOG_LEVEL": "info",
+    "ENABLE_INPUT_VALIDATION": "true"
+  }
+}

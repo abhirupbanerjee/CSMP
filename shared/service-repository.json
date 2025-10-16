@@ -1,0 +1,117 @@
+{
+  "services": [
+    {
+      "service_id": "SVC_001",
+      "service_name": "Passport Service",
+      "ministry": "Ministry of Home Affairs",
+      "description": "Handle passport applications, renewals, and replacements",
+      "service_types": ["new_application", "renewal", "replacement"],
+      "required_fields": [
+        "full_name",
+        "date_of_birth",
+        "nationality",
+        "service_type",
+        "id_number"
+      ],
+      "optional_fields": [
+        "phone",
+        "email",
+        "address",
+        "emergency_contact"
+      ],
+      "processing_time": "5-10 business days",
+      "fee": "USD 50"
+    },
+    {
+      "service_id": "SVC_002",
+      "service_name": "Driver License Service",
+      "ministry": "Ministry of Transportation",
+      "description": "Handle driver license applications, renewals, and replacements",
+      "service_types": ["new_application", "renewal", "replacement"],
+      "required_fields": [
+        "full_name",
+        "date_of_birth",
+        "license_class",
+        "id_number",
+        "address"
+      ],
+      "optional_fields": [
+        "phone",
+        "email",
+        "medical_certificate"
+      ],
+      "processing_time": "3-7 business days",
+      "fee": "USD 25"
+    },
+    {
+      "service_id": "SVC_003",
+      "service_name": "Business Permit Service",
+      "ministry": "Ministry of Commerce",
+      "description": "Handle business permit and license applications",
+      "service_types": ["new_license", "renewal", "amendment"],
+      "required_fields": [
+        "business_name",
+        "business_type",
+        "owner_name",
+        "tax_id",
+        "business_address"
+      ],
+      "optional_fields": [
+        "phone",
+        "email",
+        "business_registration_number",
+        "employee_count"
+      ],
+      "processing_time": "7-14 business days",
+      "fee": "USD 100"
+    },
+    {
+      "service_id": "SVC_004",
+      "service_name": "Birth Certificate Service",
+      "ministry": "Ministry of Home Affairs",
+      "description": "Request birth certificates and certified copies",
+      "service_types": ["original", "certified_copy", "replacement"],
+      "required_fields": [
+        "full_name",
+        "date_of_birth",
+        "parent_name",
+        "registration_number"
+      ],
+      "optional_fields": [
+        "phone",
+        "email",
+        "address"
+      ],
+      "processing_time": "2-5 business days",
+      "fee": "USD 15"
+    },
+    {
+      "service_id": "SVC_005",
+      "service_name": "Property Registration Service",
+      "ministry": "Ministry of Lands and Property",
+      "description": "Register property and transfer deeds",
+      "service_types": ["new_registration", "transfer", "amendment"],
+      "required_fields": [
+        "property_address",
+        "property_type",
+        "owner_name",
+        "deed_number",
+        "land_area"
+      ],
+      "optional_fields": [
+        "phone",
+        "email",
+        "survey_plan",
+        "valuation"
+      ],
+      "processing_time": "10-20 business days",
+      "fee": "USD 200"
+    }
+  ],
+  "metadata": {
+    "version": "1.0",
+    "last_updated": "2025-10-16",
+    "total_services": 5,
+    "region": "Caribbean"
+  }
+}
