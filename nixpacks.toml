@@ -1,0 +1,14 @@
+[phases.install]
+cmds = [
+    "rm -f package-lock.json",
+    "npm install --legacy-peer-deps"
+]
+
+[phases.build] 
+cmds = ["npm run build"]
+
+[start]
+cmd = "node server.js"
+
+[variables]
+NODE_ENV = "production"
