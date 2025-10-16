@@ -1,15 +1,19 @@
-// server.js - Fixed CommonJS Express server for API routes
+// server.js - Fixed CommonJS Express server for Railway deployment
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
 require('dotenv').config({ path: '.env.local' });
 
 const app = express();
-const PORT = process.env.API_PORT || 3001;
+
+// 🚀 RAILWAY FIX #1: Use Railway's PORT environment variable
+const PORT = process.env.PORT || 3001;
 
 // Middleware
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
+  origin: process.env.NODE_ENV === 'production' 
+    ? ['https://*.railway.app', 'https://your-domain.com'] 
+    : ['http://localhost:3000', 'http://127.0.0.1:3000'],
   credentials: true
 }));
 app.use(express.json({ limit: '10mb' }));
@@ -21,28 +25,42 @@ app.use((req, res, next) => {
   next();
 });
 
-// Health check endpoint
+// 🚀 RAILWAY FIX #2: Health check endpoint (REQUIRED)
 app.get('/health', (req, res) => {
   res.json({ 
     status: 'healthy', 
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'development',
+    port: PORT,
     api_routes: ['chat-orchestrator', 'master-agent', 'service-composer', 'validation-agent', 'services', 'test']
   });
 });
+
+// 🚀 RAILWAY FIX #3: Serve React build files in production
+if (process.env.NODE_ENV === 'production') {
+  // Serve static files from React build
+  app.use(express.static(path.join(__dirname, 'build')));
+  
+  // Serve React app for any non-API routes
+  app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'build', 'index.html'));
+  });
+}
 
 // API info endpoint
 app.get('/api', (req, res) => {
   res.json({
     message: 'Caribbean Government Service Portal API',
     version: '1.0.0',
+    environment: process.env.NODE_ENV || 'development',
     endpoints: {
       'POST /api/chat-orchestrator': 'Main workflow orchestration',
       'POST /api/master-agent': 'Intent routing',
       'POST /api/service-composer': 'Multi-turn conversations',
       'POST /api/validation-agent': 'T&T validation',
       'GET /api/services': 'List available services',
-      'GET /api/test': 'Test endpoint'
+      'GET /api/test': 'Test endpoint',
+      'GET /health': 'Health check'
     }
   });
 });
@@ -90,7 +108,17 @@ console.log(`📊 Loaded ${loadedRoutes}/${routes.length} routes successfully`);
 
 if (loadedRoutes === 0) {
   console.error('❌ No routes loaded! Check your API files.');
-  process.exit(1);
+  // Don't exit in production - serve health check at minimum
+  if (process.env.NODE_ENV !== 'production') {
+    process.exit(1);
+  }
+}
+
+// 🚀 RAILWAY FIX #4: Serve React app for all non-API routes (SPA support)
+if (process.env.NODE_ENV === 'production') {
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'build', 'index.html'));
+  });
 }
 
 // Error handling middleware
@@ -102,24 +130,25 @@ app.use((error, req, res, next) => {
   });
 });
 
-// 404 handler for unknown routes
-app.use((req, res) => {
+// 404 handler for unknown API routes
+app.use('/api/*', (req, res) => {
   res.status(404).json({ 
-    error: 'Route not found',
+    error: 'API route not found',
     path: req.originalUrl,
     available_routes: routes.map(r => r.mount)
   });
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log('\n🚀 Caribbean Government Service Portal - API Server');
-  console.log('================================================');
-  console.log(`📡 API Server: http://localhost:${PORT}`);
-  console.log(`🏥 Health Check: http://localhost:${PORT}/health`);
-  console.log(`📋 API Info: http://localhost:${PORT}/api`);
-  console.log(`📋 Services: http://localhost:${PORT}/api/services`);
-  console.log('================================================');
-  console.log(`✅ ${loadedRoutes} API endpoints ready for testing`);
-  console.log('================================================\n');
+// 🚀 RAILWAY FIX #5: Listen on 0.0.0.0 (not localhost) for Railway
+app.listen(PORT, '0.0.0.0', () => {
+  console.log('\n🚀 Caribbean Government Service Portal - Railway Deployment');
+  console.log('========================================================');
+  console.log(`📡 Server: http://0.0.0.0:${PORT}`);
+  console.log(`🏥 Health Check: http://0.0.0.0:${PORT}/health`);
+  console.log(`📋 API Info: http://0.0.0.0:${PORT}/api`);
+  console.log(`📋 Services: http://0.0.0.0:${PORT}/api/services`);
+  console.log('========================================================');
+  console.log(`✅ ${loadedRoutes} API endpoints ready`);
+  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log('========================================================\n');
 });
