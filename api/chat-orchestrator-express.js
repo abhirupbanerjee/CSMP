@@ -1,24 +1,47 @@
-// api/chat-orchestrator-express.js - COMPREHENSIVE FIX
-// Centralized state management to prevent field re-asking
+// api/chat-orchestrator-express.js - FIXED for Railway deployment
+// Use internal function calls instead of HTTP requests to localhost
 
 const express = require('express');
-const fetch = require('node-fetch');
 const router = express.Router();
 
-// Helper functions to call other agents
+// Helper functions to call other agents INTERNALLY (not via HTTP)
 async function callMasterAgent(userQuery) {
   try {
-    const response = await fetch(`${process.env.VERCEL_URL || 'http://localhost:3001'}/api/master-agent`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user_query: userQuery })
+    // FIXED: Import and call master agent function directly
+    const masterAgentRoute = require('./master-agent-express.js');
+    
+    // Create mock req/res objects for internal call
+    const mockReq = {
+      body: { user_query: userQuery },
+      method: 'POST'
+    };
+    
+    return new Promise((resolve, reject) => {
+      const mockRes = {
+        json: (data) => resolve(data),
+        status: (code) => ({
+          json: (data) => {
+            if (code >= 400) {
+              reject(new Error(data.error || `Master Agent failed: ${code}`));
+            } else {
+              resolve(data);
+            }
+          }
+        })
+      };
+      
+      // Call the master agent route handler directly
+      const routeHandler = masterAgentRoute.stack?.[0]?.route?.stack?.[0]?.handle;
+      if (routeHandler) {
+        routeHandler(mockReq, mockRes);
+      } else {
+        // Fallback: try to execute the router directly
+        masterAgentRoute(mockReq, mockRes, (err) => {
+          if (err) reject(err);
+        });
+      }
     });
     
-    if (!response.ok) {
-      throw new Error(`Master Agent failed: ${response.status}`);
-    }
-    
-    return await response.json();
   } catch (error) {
     console.error('[Orchestrator] Master Agent call failed:', error);
     throw error;
@@ -27,21 +50,45 @@ async function callMasterAgent(userQuery) {
 
 async function callServiceComposer(routingInfo, conversationHistory, collectedData) {
   try {
-    const response = await fetch(`${process.env.VERCEL_URL || 'http://localhost:3001'}/api/service-composer`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
+    // FIXED: Import and call service composer function directly
+    const serviceComposerRoute = require('./service-composer-express.js');
+    
+    // Create mock req/res objects for internal call
+    const mockReq = {
+      body: { 
         routing_info: routingInfo,
         conversation_history: conversationHistory,
-        collected_data: collectedData  // FIXED: Pass collected data explicitly
-      })
+        collected_data: collectedData
+      },
+      method: 'POST'
+    };
+    
+    return new Promise((resolve, reject) => {
+      const mockRes = {
+        json: (data) => resolve(data),
+        status: (code) => ({
+          json: (data) => {
+            if (code >= 400) {
+              reject(new Error(data.error || `Service Composer failed: ${code}`));
+            } else {
+              resolve(data);
+            }
+          }
+        })
+      };
+      
+      // Call the service composer route handler directly
+      const routeHandler = serviceComposerRoute.stack?.[0]?.route?.stack?.[0]?.handle;
+      if (routeHandler) {
+        routeHandler(mockReq, mockRes);
+      } else {
+        // Fallback: try to execute the router directly
+        serviceComposerRoute(mockReq, mockRes, (err) => {
+          if (err) reject(err);
+        });
+      }
     });
     
-    if (!response.ok) {
-      throw new Error(`Service Composer failed: ${response.status}`);
-    }
-    
-    return await response.json();
   } catch (error) {
     console.error('[Orchestrator] Service Composer call failed:', error);
     throw error;
@@ -171,22 +218,6 @@ function extractCollectedData(conversation_history, required_fields, optional_fi
       else {
         console.log(`[Orchestrator] ❓ NO MATCH for: "${question.substring(0, 50)}..."`);
       }
-    }
-  }
-  
-  // FIXED: Auto-detect service type AFTER Q&A processing (moved from beginning)
-  if (!collected.service_type) {
-    const allContent = conversation_history.map(msg => msg.content).join(' ').toLowerCase();
-    
-    if (allContent.includes('renew') || allContent.includes('renewal')) {
-      collected.service_type = 'renewal';
-      console.log(`[Orchestrator] 🔍 AUTO-DETECTED service_type: "renewal" from conversation context`);
-    } else if (allContent.includes('new') || allContent.includes('application')) {
-      collected.service_type = 'new_application';
-      console.log(`[Orchestrator] 🔍 AUTO-DETECTED service_type: "new_application" from conversation context`);
-    } else if (allContent.includes('replace') || allContent.includes('replacement')) {
-      collected.service_type = 'replacement';
-      console.log(`[Orchestrator] 🔍 AUTO-DETECTED service_type: "replacement" from conversation context`);
     }
   }
   
