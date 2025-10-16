@@ -1,5 +1,5 @@
 {
-  "name": "csmp-bot-vercel",
+  "name": "csmp-bot-railway",
   "version": "1.0.0",
   "description": "Caribbean Government Service Portal - Multi-Agent Web Platform",
   "main": "src/index.js",
@@ -9,23 +9,16 @@
     "dev": "concurrently \"npm run dev:api\" \"npm run dev:frontend\"",
     "dev:api": "node server.js",
     "dev:frontend": "react-scripts start",
-    "dev:api-only": "node server.js",
-    "dev:frontend-only": "react-scripts start",
     "build": "react-scripts build",
-    "start": "react-scripts start",
+    "start": "node server.js",
     "test": "react-scripts test",
-    "eject": "react-scripts eject",
-    "vercel-build": "react-scripts build",
-    "validate-config": "node -e \"require('./shared/service-loader.js').validateRepository()\"",
-    "serve": "serve -s build",
-    "test:api": "node -e \"require('./test-api.js')\"",
-    "setup": "npm install && echo 'Setup complete! Run: npm run dev'"
+    "eject": "react-scripts eject"
   },
   "dependencies": {
-    "concurrently": "^9.2.1",
+    "concurrently": "^8.2.2",
     "cors": "^2.8.5",
-    "dotenv": "^17.2.3",
-    "express": "^5.1.0",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
     "node-fetch": "^2.7.0",
     "openai": "^4.20.1",
     "react": "^18.2.0",
@@ -36,8 +29,7 @@
   "devDependencies": {
     "@testing-library/jest-dom": "^5.16.5",
     "@testing-library/react": "^13.4.0",
-    "@testing-library/user-event": "^14.4.3",
-    "serve": "^14.2.1"
+    "@testing-library/user-event": "^14.4.3"
   },
   "browserslist": {
     "production": [
@@ -54,38 +46,5 @@
   "engines": {
     "node": ">=18.0.0",
     "npm": ">=8.0.0"
-  },
-  "keywords": [
-    "caribbean",
-    "government",
-    "chatbot",
-    "multi-agent",
-    "trinidad-tobago",
-    "openai",
-    "react",
-    "government-services"
-  ],
-  "author": {
-    "name": "Caribbean Government Service Portal",
-    "email": "info@caribbeanportal.gov.tt",
-    "url": "https://github.com/your-org/csmp-bot-vercel"
-  },
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/your-org/csmp-bot-vercel.git"
-  },
-  "bugs": {
-    "url": "https://github.com/your-org/csmp-bot-vercel/issues"
-  },
-  "eslintConfig": {
-    "extends": [
-      "react-app",
-      "react-app/jest"
-    ],
-    "rules": {
-      "no-unused-vars": "warn",
-      "no-console": "off"
-    }
   }
 }
