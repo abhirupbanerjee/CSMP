@@ -1,9 +1,9 @@
-// src/utils/apiClient.js - Fixed API client for Railway deployment
-// Points to Railway URL in production, localhost in development
+// src/utils/apiClient.js - Updated API client for Express server with Speech
+// Points to Express development server for local development
 
 const API_BASE = process.env.NODE_ENV === 'development' 
-  ? 'http://localhost:3001/api'        // Local development
-  : '/api';                            // Production (Railway) - relative URLs
+  ? 'http://localhost:3001/api'  // Express server for development
+  : '/api';                       // Vercel for production
 
 // Generic API call wrapper with error handling
 async function apiCall(endpoint, data = null, method = 'POST') {
@@ -54,11 +54,7 @@ async function apiCall(endpoint, data = null, method = 'POST') {
     let errorType = 'api';
     
     if (error.name === 'TypeError' && error.message.includes('fetch')) {
-      if (process.env.NODE_ENV === 'development') {
-        errorMessage = `Cannot connect to API server at ${API_BASE}. Make sure the Express server is running on port 3001.`;
-      } else {
-        errorMessage = `Cannot connect to API server. Please check your internet connection.`;
-      }
+      errorMessage = `Cannot connect to API server at ${API_BASE}. Make sure the Express server is running on port 3001.`;
       errorType = 'network';
     }
     
@@ -67,7 +63,7 @@ async function apiCall(endpoint, data = null, method = 'POST') {
     }
     
     if (error.message.includes('Unexpected token')) {
-      errorMessage = `Server returned HTML instead of JSON. Check server setup.`;
+      errorMessage = `Server returned HTML instead of JSON. Check Express server setup.`;
     }
     
     return {
@@ -124,14 +120,72 @@ export async function getService(serviceId) {
   });
 }
 
+// Speech-to-Text - Audio upload and transcription
+export async function transcribeAudio(audioBlob, filename = 'recording.wav') {
+  try {
+    // Create FormData for file upload
+    const formData = new FormData();
+    formData.append('audio', audioBlob, filename);
+
+    console.log(`[API Client] Uploading audio for transcription: ${filename}, size: ${audioBlob.size} bytes`);
+
+    const response = await fetch(`${API_BASE}/speech`, {
+      method: 'POST',
+      body: formData // No Content-Type header - let browser set it with boundary
+    });
+
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      console.error('[API Client] Non-JSON response from speech endpoint:', response.status);
+      throw new Error(`Server returned ${response.status}: Expected JSON but got ${contentType}`);
+    }
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      console.error('[API Client] Speech transcription error:', result);
+      throw new Error(result.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    console.log('[API Client] Speech transcription successful');
+    return {
+      success: true,
+      data: result,
+      status: response.status
+    };
+
+  } catch (error) {
+    console.error('[API Client] Speech transcription failed:', error);
+
+    let errorMessage = error.message;
+    let errorType = 'api';
+
+    if (error.name === 'TypeError' && error.message.includes('fetch')) {
+      errorMessage = `Cannot connect to speech service at ${API_BASE}. Make sure the server is running.`;
+      errorType = 'network';
+    }
+
+    if (error.message.includes('413')) {
+      errorMessage = 'Audio file too large. Please record a shorter message.';
+    }
+
+    if (error.message.includes('Only audio files')) {
+      errorMessage = 'Invalid audio format. Please try recording again.';
+    }
+
+    return {
+      success: false,
+      error: errorMessage,
+      type: errorType,
+      originalError: error.message
+    };
+  }
+}
+
 // Test API connectivity
 export async function testConnection() {
   try {
-    const healthUrl = process.env.NODE_ENV === 'development' 
-      ? 'http://localhost:3001/health' 
-      : '/health';
-      
-    const response = await fetch(healthUrl);
+    const response = await fetch(`${API_BASE.replace('/api', '')}/health`);
     if (response.ok) {
       const data = await response.json();
       console.log('[API Client] Connection test successful:', data);
@@ -162,7 +216,7 @@ export const ErrorTypes = {
 export const ApiConfig = {
   BASE_URL: API_BASE,
   IS_DEVELOPMENT: process.env.NODE_ENV === 'development',
-  ENVIRONMENT: process.env.NODE_ENV || 'production'
+  EXPECTED_SERVER_PORT: 3001
 };
 
 // Export API client functions as default object
@@ -174,6 +228,7 @@ const apiClient = {
   getServices,
   getService,
   testConnection,
+  transcribeAudio, // Added speech function
   ErrorTypes,
   ApiConfig
 };
